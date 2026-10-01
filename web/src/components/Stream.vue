@@ -58,6 +58,23 @@
       </v-tooltip>
       <v-tooltip location="bottom">
         <template #activator="{ props }">
+          <v-btn
+            :disabled="relatedFlowsQuery == ''"
+            aria-label="Find related flows"
+            exact
+            icon
+            :to="{ name: 'search', query: { q: relatedFlowsQuery } }"
+            v-bind="props"
+            ><v-icon>mdi-timeline-clock-outline</v-icon></v-btn
+          >
+        </template>
+        <span>
+          Find flows between these hosts from 10 minutes before to 5 minutes
+          after this stream's last packet
+        </span>
+      </v-tooltip>
+      <v-tooltip location="bottom">
+        <template #activator="{ props }">
           <v-btn exact icon v-bind="props" @click="openInCyberChef()"
             ><v-icon>mdi-chef-hat</v-icon></v-btn
           >
@@ -478,6 +495,13 @@ const serviceTagsQueryPart = computed(() => {
 
 const streamId = computed(() => {
   return parseInt(route.params.streamId as string, 10);
+});
+
+const relatedFlowsQuery = computed(() => {
+  const current = stream.stream?.Stream;
+  if (current == null) return "";
+  // ponytail: same endpoint/time heuristic; manual chain grouping if unrelated flows need exclusion.
+  return `@seed:id:${current.ID} chost:@seed:chost@ shost:@seed:shost@ time:@seed:ltime@-10m:@seed:ltime@+5m sort:ftime`;
 });
 
 const converter = computed(() => {
