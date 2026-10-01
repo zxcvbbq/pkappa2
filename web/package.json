@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
+    "test": "node --test ../tests/web-requests.test.cjs",
     "lint": "eslint --fix .",
     "format": "prettier --check --write .",
     "nearley": "nearleyc src/parser/query.ne -o src/parser/query.ts",

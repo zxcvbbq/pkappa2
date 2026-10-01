@@ -13,6 +13,7 @@ export type GraphType =
   | "Average Duration";
 
 interface State {
+  requestId: number;
   type: GraphType | null;
   delta: string | null;
   aspects: string[] | null;
@@ -25,6 +26,7 @@ interface State {
 
 export const useGraphStore = defineStore("graph", {
   state: (): State => ({
+    requestId: 0,
     type: null,
     delta: null,
     aspects: null,
@@ -42,6 +44,7 @@ export const useGraphStore = defineStore("graph", {
       query: string,
       type: GraphType,
     ) {
+      const requestId = ++this.requestId;
       this.delta = delta;
       this.aspects = aspects;
       this.tags = tags;
@@ -52,6 +55,7 @@ export const useGraphStore = defineStore("graph", {
       this.graph = null;
       return APIClient.getGraph(delta, aspects, tags, query)
         .then((data) => {
+          if (requestId !== this.requestId) return;
           this.delta = delta;
           this.aspects = aspects;
           this.tags = tags;
@@ -59,10 +63,9 @@ export const useGraphStore = defineStore("graph", {
           this.type = type;
           this.error = null;
           this.graph = data;
-          this.running = false;
         })
         .catch((err: unknown) => {
-          if (axios.isCancel(err)) return;
+          if (requestId !== this.requestId || axios.isCancel(err)) return;
           if (axios.isAxiosError<string, unknown>(err)) {
             this.delta = delta;
             this.aspects = aspects;
@@ -74,8 +77,10 @@ export const useGraphStore = defineStore("graph", {
                 ? err.response.data
                 : err.message;
             this.graph = null;
-            this.running = false;
           } else throw err;
+        })
+        .finally(() => {
+          if (requestId === this.requestId) this.running = false;
         });
     },
   },

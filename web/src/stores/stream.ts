@@ -4,6 +4,7 @@ import APIClient from "@/apiClient";
 import { StreamData } from "@/apiClient";
 
 interface State {
+  requestId: number;
   id: number | null;
   running: boolean;
   error: string | null;
@@ -12,6 +13,7 @@ interface State {
 
 export const useStreamStore = defineStore("stream", {
   state: (): State => ({
+    requestId: 0,
     id: null,
     running: false,
     error: null,
@@ -19,18 +21,20 @@ export const useStreamStore = defineStore("stream", {
   }),
   actions: {
     async fetchStream(id: number, converter: string) {
+      const requestId = ++this.requestId;
       this.id = id;
       this.running = true;
       this.error = null;
       this.stream = null;
       return APIClient.getStream(id, converter)
         .then((data) => {
+          if (requestId !== this.requestId) return;
           this.id = id;
           this.error = null;
           this.stream = data;
-          this.running = false;
         })
         .catch((err: unknown) => {
+          if (requestId !== this.requestId || axios.isCancel(err)) return;
           if (axios.isAxiosError<string, unknown>(err)) {
             this.id = id;
             this.error =
@@ -38,8 +42,10 @@ export const useStreamStore = defineStore("stream", {
                 ? err.response.data
                 : err.message;
             this.stream = null;
-            this.running = false;
           } else throw err;
+        })
+        .finally(() => {
+          if (requestId === this.requestId) this.running = false;
         });
     },
   },

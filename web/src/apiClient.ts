@@ -363,7 +363,7 @@ const APIClient = {
     return this.perform("patch", `/tags`, null, params);
   },
 
-  _abort: null as null | (() => void),
+  _abort: {} as Record<string, (() => void) | undefined>,
   async perform(
     method: string,
     resource: string,
@@ -373,9 +373,9 @@ const APIClient = {
   ) {
     let signal: AbortSignal | undefined;
     if (resource == "/search.json" || resource == "/graph.json") {
-      this._abort?.();
+      this._abort[resource]?.();
       const controller = new AbortController();
-      this._abort = controller.abort.bind(controller);
+      this._abort[resource] = controller.abort.bind(controller);
       signal = controller.signal;
     }
 
